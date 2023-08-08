@@ -61,26 +61,26 @@ class InstallCommand(install.install):
 
 
 install_requires_projects = [
-    "ott-jax>=0.2.0",
+    "ott-jax==0.2.0",
     "sklearn",
     "lingvo==0.12.6",
-    "seaborn>=0.11.2",
-    "dmvr @ git+https://github.com/deepmind/dmvr.git",
+    "seaborn==0.11.2",
+    "dmvr",
 ]
 
 install_requires_core = [
     "absl-py>=1.0.0",
     "numpy>=1.12",
     "jax>=0.4.3",
-    "jaxlib>=0.4.3",
-    "flax>=0.4.0",
-    "ml-collections>=0.1.1",
-    "tensorflow>=2.7",
-    "tensorflow-addons>=0.15.0",
-    "immutabledict>=2.2.1",
-    "clu>=0.0.6",
-    "tensorflow-datasets",
-    "optax @ git+https://github.com/deepmind/optax.git@master",
+    "jaxlib>=0.1.37",
+    "flax==0.5.0",
+    "ml-collections==0.1.1",
+    "tensorflow==2.8.4",
+    "tensorflow-addons==0.15.0",
+    "immutabledict==2.2.1",
+    "clu==0.0.6",
+    "tensorflow-datasets==4.8.3",
+    "optax",
 ]
 
 tests_require = [

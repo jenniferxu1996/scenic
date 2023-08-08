@@ -10,6 +10,9 @@ KINETICS_400_TRAIN_SIZE = 214834
 KINETICS_400_VAL_SIZE = 17637
 KINETICS_400_TEST_SIZE = 34579
 
+COOKING_TRAIN_SIZE = 106
+COOKING_VAL_SIZE = 9
+COOKING_TEST_SIZE = 15
 
 def get_config():
   """Returns the base experiment configuration."""
@@ -22,18 +25,18 @@ def get_config():
   config.data_dtype_str = 'float32'
   config.datset_configs = ml_collections.ConfigDict()
   config.dataset_configs.base_dir = (
-      '/path/to/dataset')
+      'D:\\UCL\\phd\\scenic\\scenic\\dmvr_dataset\\cooking_dataset')
   config.dataset_configs.tables = {
-      'train': 'train.tfrecord@1024',
-      'validation': 'validation.tfrecord@1024',
-      'test': 'test.tfrecord@1024'
+      'train': 'cooking_annotation_train-00000-of-00001',
+      'validation': 'cooking_annotation_valid-00000-of-00001',
+      'test': 'cooking_annotation_test-00000-of-00001'
   }
   config.dataset_configs.examples_per_subset = {
-      'train': KINETICS_400_TRAIN_SIZE,
-      'validation': KINETICS_400_VAL_SIZE,
-      'test': KINETICS_400_TEST_SIZE
+      'train': COOKING_TRAIN_SIZE,
+      'validation': COOKING_VAL_SIZE,
+      'test': COOKING_TEST_SIZE
   }
-  config.dataset_configs.num_classes = 400
+  config.dataset_configs.num_classes = 28
   config.data_dtype_str = 'float32'
 
   # This is going to sample 32 frames, sampled at a stride of 2 from the video.
@@ -41,7 +44,8 @@ def get_config():
   config.dataset_configs.num_frames = 32
   config.dataset_configs.stride = 2
   config.dataset_configs.min_resize = 256
-  config.dataset_configs.crop_size = 224
+  config.dataset_configs.crop_size = \
+    224
   config.dataset_configs.one_hot_labels = True
   config.dataset_configs.zero_centering = True
 
@@ -50,8 +54,8 @@ def get_config():
   config.dataset_configs.log_test_epochs = 5
   # The effective batch size per host when testing is
   # num_test_clips * test_batch_size.
-  config.dataset_configs.num_test_clips = 4
-  config.dataset_configs.test_batch_size = 8  # Must equal num_local_devices.
+  config.dataset_configs.num_test_clips = 1
+  config.dataset_configs.test_batch_size = 1  # Must equal num_local_devices.
   # To take three spatial crops when testing.
   config.dataset_configs.do_three_spatial_crops = True
   config.multicrop_clips_per_device = 2
@@ -104,8 +108,8 @@ def get_config():
   config.l2_decay_factor = 0
   config.max_grad_norm = 1
   config.label_smoothing = None
-  config.num_training_epochs = 30
-  config.batch_size = 64
+  config.num_training_epochs = 70000
+  config.batch_size = 8
   config.rng_seed = 0
 
   # Use ImageNet-21k-initialized model.
@@ -114,7 +118,7 @@ def get_config():
   # Download pretrained ImageNet checkpoints from here:
   # https://github.com/google-research/scenic/tree/main/scenic/projects/baselines (checkpoint_format = 'scenic')  pylint: disable=line-too-long
   # https://github.com/google-research/vision_transformer (checkpoint_format = 'big_vision')  pylint: disable=line-too-long
-  config.init_from.checkpoint_path = 'path_to_checkpoint_of_vit_b_16'
+  config.init_from.checkpoint_path = r'D:\UCL\phd\scenic\scenic\projects\vivit\configs\kinetics400'
   config.init_from.checkpoint_format = 'scenic'
   config.init_from.model_config = ml_collections.ConfigDict()
   config.init_from.model_config.model = ml_collections.ConfigDict()
@@ -124,7 +128,7 @@ def get_config():
   config.init_from.positional_embed_size_change = 'tile'
 
   # Learning rate.
-  steps_per_epoch = KINETICS_400_TRAIN_SIZE // config.batch_size
+  steps_per_epoch = COOKING_TRAIN_SIZE // config.batch_size
   total_steps = config.num_training_epochs * steps_per_epoch
   config.lr_configs = ml_collections.ConfigDict()
   config.lr_configs.learning_rate_schedule = 'compound'

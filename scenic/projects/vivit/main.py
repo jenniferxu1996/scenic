@@ -25,11 +25,13 @@ def get_trainer(trainer_name: str) -> Callable[..., Any]:
 def main(rng: jnp.ndarray, config: ml_collections.ConfigDict, workdir: str,
          writer: metric_writers.MetricWriter):
   """Main function for the ViViT project."""
+  print('config: ', config)
   model_cls = vivit_model.get_model_cls(config.model_name)
   data_rng, rng = jax.random.split(rng)
   dataset = train_utils.get_dataset(
       config, data_rng, dataset_service_address=FLAGS.dataset_service_address)
   trainer = get_trainer(config.trainer_name)
+  print(f"work dir is {workdir}")
 
   trainer(
       rng=rng,

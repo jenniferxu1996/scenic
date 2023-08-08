@@ -101,6 +101,7 @@ def train_step(
 
   def training_loss_fn(params):
     variables = {'params': params, **train_state.model_state}
+
     logits, new_model_state = flax_model.apply(
         variables,
         batch['inputs'],

@@ -108,7 +108,7 @@ def initialize_model(
   @functools.partial(jax.jit, backend='cpu')
   def _initialize_model(rngs):
     """Initialization function to be jitted."""
-    init_model_state, init_params = flax.core.pop(model_def.init(
+    init_model_state, init_params = flax.core.FrozenDict.pop(model_def.init(
         rngs, *dummy_input, train=train, debug=False), 'params')
     # Set bias in the head to low value, such that loss is small initially.
     if config.get('init_head_bias', None) is not None:
@@ -205,10 +205,10 @@ def initialize_model_with_pytree(
     # If dummy_input is a dict, we feed inputs as keyword arguments, otherwise
     # feed as position arguments.
     if isinstance(dummy_input, dict):
-      init_model_state, init_params = flax.core.pop(model_def.init(
+      init_model_state, init_params = flax.core.FrozenDict.pop(model_def.init(
           rngs, **dummy_input, train=False, debug=False), 'params')
     else:
-      init_model_state, init_params = flax.core.pop(model_def.init(
+      init_model_state, init_params = flax.core.FrozenDict.pop(model_def.init(
           rngs, *dummy_input, train=False, debug=False), 'params')
     # Set bias in the head to low value, such that loss is small initially.
     if config.get('init_head_bias', None) is not None:
@@ -312,7 +312,7 @@ def get_dataset(
       shuffle_seed=shuffle_seed,
       dataset_configs=dataset_configs,
       dataset_service_address=dataset_service_address)
-
+  print(f"dataset is {dataset}")
   return dataset
 
 
@@ -365,7 +365,7 @@ def initialize_multitask_model(
   @functools.partial(jax.jit, backend='cpu')
   def _initialize_model(rngs):
     """Initialization function to be jitted."""
-    init_model_state, init_params = flax.core.pop(nn.init(
+    init_model_state, init_params = flax.core.FrozenDict.pop(nn.init(
         fn=init_fn, module=model_def)(rngs), 'params')
     # Set bias in the head to low value, such that loss is small initially.
     if (config.get('init_head_bias', None) is not None and
@@ -637,8 +637,19 @@ def restore_checkpoint(checkpoint_path: str,
   if train_state is None:
     raise ValueError('Please use `restore_pretrained_checkpoint` for loading'
                      'a checkpoint without providing a Scenic TrainState.')
+  output_projection_target = train_state.optimizer.target['output_projection']
+  output_projection_state = train_state.optimizer.state.param_states['output_projection']
   train_state = checkpoints.restore_checkpoint(checkpoint_path, train_state,
                                                step)
+  target = flax.core.unfreeze(train_state.optimizer.target)
+  target['output_projection'] = output_projection_target
+  target = flax.core.freeze(target)
+  param_states = flax.core.unfreeze(train_state.optimizer.state.param_states)
+  param_states['output_projection'] = output_projection_state
+  param_states = flax.core.freeze(param_states)
+  train_state = train_state.replace(
+      optimizer=train_state.optimizer.replace(target=target, state=train_state.optimizer.state.replace(param_states=param_states)),
+  )
   return train_state, int(train_state.global_step)
 
 

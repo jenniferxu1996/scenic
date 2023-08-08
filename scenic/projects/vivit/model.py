@@ -543,14 +543,19 @@ class SpaceTimeViViT(nn.Module):
 
   @nn.compact
   def __call__(self, x: jnp.ndarray, *, train: bool, debug: bool = False):
-
     del debug
+
+    def f(x_i):
+        # jax.debug.print("x: {}", x_i)
+        return x_i
+
+    jax.vmap(f)(x)
     x, _ = temporal_encode(
         x, self.temporal_encoding_config, self.patches, self.hidden_size,
         return_1d=False)
     bs, t, h, w, c = x.shape
     x = x.reshape(bs, t, h * w, c)
-
+    print(f"the shape of x is {x.shape}")
     def vit_body(x, mlp_dim, num_layers, num_heads, encoder_name='Transformer'):
       # If we want to add a class token, add it here.
       if self.classifier in ['token']:
@@ -580,6 +585,7 @@ class SpaceTimeViViT(nn.Module):
       return x
 
     # run attention across spacec, per frame
+    # axes=1 means iterate along the time axis, out_axes?
     x = jax.vmap(
         functools.partial(
             vit_body,
@@ -594,6 +600,8 @@ class SpaceTimeViViT(nn.Module):
     assert x.ndim == 3 and x.shape[:2] == (bs, t)
 
     # run attention across time, over all frames
+    # TODO: from spatial transformer encoder outputs the most activated regions and then construct
+    #  a graph representation between the spatial and temporal layers
     if not self.attention_config.get('spatial_only_baseline', False):
       x = vit_body(
           x,
@@ -614,10 +622,11 @@ class SpaceTimeViViT(nn.Module):
     if self.return_prelogits:
       return x
     else:
-      x = nn.Dense(
+      dense = nn.Dense(
           self.num_classes,
           kernel_init=nn.initializers.zeros,
-          name='output_projection')(x)
+          name='output_projection')
+      x = dense(x)
       return x
 
 
@@ -661,8 +670,7 @@ class ViViTClassificationModel(ClassificationModel):
           spatial_num_layers=self.config.model.spatial_transformer.num_layers,
           spatial_num_heads=self.config.model.spatial_transformer.num_heads,
           temporal_mlp_dim=self.config.model.temporal_transformer.mlp_dim,
-          temporal_num_layers=self.config.model.temporal_transformer
-          .num_layers,
+          temporal_num_layers=self.config.model.temporal_transformer.num_layers,
           temporal_num_heads=self.config.model.temporal_transformer.num_heads,
           representation_size=self.config.model.representation_size,
           patches=self.config.model.patches,

@@ -86,6 +86,7 @@ def train(
   if config.checkpoint:
     train_state, start_step = train_utils.restore_checkpoint(
         workdir, train_state)
+    print(f'start step is {start_step}')
 
   if (start_step == 0  # Which means "no" checkpoint is restored!
       and config.get('init_from') is not None):
@@ -228,6 +229,7 @@ def train(
     except RuntimeError:
       logging.warn('Memory defragmentation not possible, use the tfrt runtime')
 
+  print("total step is ", total_steps)
   for step in range(start_step + 1, total_steps + 1):
     with jax.profiler.StepTraceAnnotation('train', step_num=step):
       train_batch = next(dataset.train_iter)

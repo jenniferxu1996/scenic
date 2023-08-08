@@ -477,6 +477,8 @@ def init_encoderblock(to_params, from_params, tm_key, config):
   # Explicitly enumerate over the keys in the encoder-block. Don't just
   # assign the dictionary. It is possible for the target model to
   # contain keys that are not in the restored model.
+  if tm_key not in to_params:
+    return
   attention_type = config.model.attention_config.type
   for enc_key in from_params[tm_key].keys():
     if attention_type in [

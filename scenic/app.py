@@ -71,10 +71,8 @@ def _run_main(argv, *, main):
   # Hide any GPUs form TensorFlow. Otherwise, TF might reserve memory and make
   # it unavailable to JAX.
   tf.config.experimental.set_visible_devices([], 'GPU')
-
   # Enable wrapping of all module calls in a named_call for easier profiling:
   nn.enable_named_call()
-
   if FLAGS.jax_backend_target:
     logging.info('Using JAX backend target %s', FLAGS.jax_backend_target)
     jax_xla_backend = ('None' if FLAGS.jax_xla_backend is None else
@@ -83,7 +81,6 @@ def _run_main(argv, *, main):
 
   logging.info('JAX host: %d / %d', jax.process_index(), jax.process_count())
   logging.info('JAX devices: %r', jax.devices())
-
   # Add a note so that we can tell which task is which JAX host.
   # (task 0 is not guaranteed to be the host 0)
   platform.work_unit().set_task_status(
