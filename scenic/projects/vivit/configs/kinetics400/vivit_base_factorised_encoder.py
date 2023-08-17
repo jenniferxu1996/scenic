@@ -14,6 +14,10 @@ COOKING_TRAIN_SIZE = 106
 COOKING_VAL_SIZE = 9
 COOKING_TEST_SIZE = 15
 
+SOMETHING_TRAIN_SIZE = 4739
+SOMETHING_VAL_SIZE = 727
+SOMETHING_TEST_SIZE = 773
+
 def get_config():
   """Returns the base experiment configuration."""
   config = ml_collections.ConfigDict()
@@ -25,18 +29,18 @@ def get_config():
   config.data_dtype_str = 'float32'
   config.datset_configs = ml_collections.ConfigDict()
   config.dataset_configs.base_dir = (
-      'D:\\UCL\\phd\\scenic\\scenic\\dmvr_dataset\\cooking_dataset')
+      'D:\\UCL\\phd\\scenic\\scenic\\dmvr_dataset\\something_dataset')
   config.dataset_configs.tables = {
-      'train': 'cooking_annotation_train-00000-of-00001',
-      'validation': 'cooking_annotation_valid-00000-of-00001',
-      'test': 'cooking_annotation_test-00000-of-00001'
+      'train': 'something_annotation_train-00000-of-00001',
+      'validation': 'something_annotation_valid-00000-of-00001',
+      'test': 'something_annotation_test-00000-of-00001'
   }
   config.dataset_configs.examples_per_subset = {
-      'train': COOKING_TRAIN_SIZE,
-      'validation': COOKING_VAL_SIZE,
-      'test': COOKING_TEST_SIZE
+      'train': SOMETHING_TRAIN_SIZE,
+      'validation': SOMETHING_VAL_SIZE,
+      'test': SOMETHING_TEST_SIZE
   }
-  config.dataset_configs.num_classes = 28
+  config.dataset_configs.num_classes = 174
   config.data_dtype_str = 'float32'
 
   # This is going to sample 32 frames, sampled at a stride of 2 from the video.
@@ -50,6 +54,7 @@ def get_config():
   config.dataset_configs.zero_centering = True
 
   # Multicrop evaluation settings:
+  config.dataset_configs.log_eval_steps = 2
   config.dataset_configs.do_multicrop_test = True  # Do during training.
   config.dataset_configs.log_test_epochs = 5
   # The effective batch size per host when testing is
@@ -108,7 +113,7 @@ def get_config():
   config.l2_decay_factor = 0
   config.max_grad_norm = 1
   config.label_smoothing = None
-  config.num_training_epochs = 70000
+  config.num_training_epochs = 30000
   config.batch_size = 8
   config.rng_seed = 0
 
@@ -128,7 +133,7 @@ def get_config():
   config.init_from.positional_embed_size_change = 'tile'
 
   # Learning rate.
-  steps_per_epoch = COOKING_TRAIN_SIZE // config.batch_size
+  steps_per_epoch = SOMETHING_TRAIN_SIZE // config.batch_size
   total_steps = config.num_training_epochs * steps_per_epoch
   config.lr_configs = ml_collections.ConfigDict()
   config.lr_configs.learning_rate_schedule = 'compound'
@@ -142,7 +147,7 @@ def get_config():
   config.checkpoint = True  # Do checkpointing.
   config.debug_train = False  # Debug mode during training.
   config.debug_eval = False  # Debug mode during eval.
-  config.checkpoint_steps = 1000  # Checkpoint more frequently than a val epoch.
+  config.checkpoint_steps = 2  # Checkpoint more frequently than a val epoch.
   return config
 
 

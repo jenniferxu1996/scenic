@@ -312,7 +312,6 @@ def get_dataset(
       shuffle_seed=shuffle_seed,
       dataset_configs=dataset_configs,
       dataset_service_address=dataset_service_address)
-  print(f"dataset is {dataset}")
   return dataset
 
 
@@ -849,7 +848,6 @@ def log_eval_summary(step: int,
 
   # Adds extra_eval_summary to the returned eval_summary.
   eval_metrics_summary.update(extra_eval_summary)
-
   writer.write_scalars(
       step, {
           key_separator.join((prefix, key)): val

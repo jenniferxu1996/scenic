@@ -1,9 +1,9 @@
 import pandas as pd
 import os
 import cv2
+import json
 
-
-def generate_split():
+def generate_split_cooking():
     CLIP_PATH = 'cooking_video_clip'
     subject_folders = os.listdir(CLIP_PATH)
     train_annotation_file = pd.DataFrame(columns=['video_path', 'start', 'end', 'label'])
@@ -55,16 +55,71 @@ def generate_split():
     all_annotation_file.to_csv('cooking_annotation.csv', index=False)
 
 
-def generate_label():
-    all_annotation_file = pd.read_csv('cooking_annotation.csv')
-    labels = all_annotation_file['label'].unique().tolist()
-    with open('label.txt', 'w') as f:
-        for label in labels:
-            f.writelines(label)
-            f.write('\n')
-    f.close()
+def generate_split_something():
+    CLIP_PATH = 'something_video_clip'
+    videos = os.listdir(CLIP_PATH)
+    train_annotation_file = pd.DataFrame(columns=['video_path', 'start', 'end', 'label'])
+    valid_annotation_file = pd.DataFrame(columns=['video_path', 'start', 'end', 'label'])
+    test_annotation_file = pd.DataFrame(columns=['video_path', 'start', 'end', 'label'])
+    all_annotation_file = pd.DataFrame(columns=['video_path', 'start', 'end', 'label'])
+
+    train_label = pd.read_json('something_labels/train.json')
+    train_id = train_label['id'].tolist()
+    test_label = pd.read_csv('something_labels/test-answers.csv', sep=';')
+    test_id = test_label['id'].tolist()
+    valid_label = pd.read_json('something_labels/validation.json')
+    valid_id = valid_label['id'].tolist()
+
+    for video in videos:
+        video_path = os.path.join(CLIP_PATH, video)
+        cap = cv2.VideoCapture(video_path)
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        duration = frame_count / fps
+        cap.release()
+        video_id = int(os.path.splitext(video)[0])
+        if video_id in valid_id:
+            video_info_row = valid_label[valid_label['id'] == video_id]
+            mode = 'valid'
+        elif video_id in test_id:
+            video_info_row = test_label[test_label['id'] == video_id]
+            mode = 'test'
+        else:
+            video_info_row = train_label[train_label['id'] == video_id]
+            mode = 'train'
+        if 'template' in video_info_row.columns:
+            activity_label = video_info_row['template'].tolist()[0].replace("[", "").replace("]", "")
+            new_row = pd.DataFrame({'video_path': [video_path], 'start': [0.0], 'end': [duration], 'label': [activity_label]})
+            if mode == 'valid':
+                valid_annotation_file = pd.concat([valid_annotation_file, new_row], ignore_index=True)
+            elif mode == 'test':
+                test_annotation_file = pd.concat([test_annotation_file, new_row], ignore_index=True)
+            else:
+                train_annotation_file = pd.concat([train_annotation_file, new_row], ignore_index=True)
+    train_annotation_file.to_csv('something_annotation_train.csv', index=False)
+    valid_annotation_file.to_csv('something_annotation_valid.csv', index=False)
+    test_annotation_file.to_csv('something_annotation_test.csv', index=False)
+
+
+def generate_label(dataset):
+    assert dataset in ['cooking', 'something']
+    if dataset == 'cooking':
+        all_annotation_file = pd.read_csv('cooking_annotation.csv')
+        labels = all_annotation_file['label'].unique().tolist()
+        with open('label.txt', 'w') as f:
+            for label in labels:
+                f.writelines(label)
+                f.write('\n')
+        f.close()
+    elif dataset == 'something':
+        with open('something_labels/labels.json', 'r') as json_file:
+            data = json.load(json_file)
+        with open('something_labels/label.txt', 'w') as f:
+            for key in data.keys():
+                f.writelines(key)
+                f.write('\n')
+        f.close()
 
 
 if __name__ == '__main__':
-    generate_split()
-    generate_label()
+    generate_label('something')
