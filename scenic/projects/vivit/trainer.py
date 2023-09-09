@@ -84,12 +84,9 @@ def train(
       accum_train_time=0)
   start_step = train_state.global_step
   best_eval_acc = 0
-  eval_acc = 0
   if config.checkpoint:
     train_state, start_step = train_utils.restore_checkpoint(
         workdir, train_state)
-    print(f'start step is {start_step}')
-
 
   if (start_step == 0  # Which means "no" checkpoint is restored!
       and config.get('init_from') is not None):
@@ -154,8 +151,7 @@ def train(
       # We can donate the eval_batch's buffer.
       donate_argnums=(1,),
   )
-  log_eval_steps = config.dataset_configs.get('log_eval_steps') or steps_per_epoch
-  print('log_eval: ', log_eval_steps)
+  log_eval_steps = config.get('log_eval_steps') or steps_per_epoch
   log_test_steps = 0
   if config.dataset_configs.get('do_multicrop_test'):
     log_test_steps = int(steps_per_epoch *
@@ -233,7 +229,6 @@ def train(
     except RuntimeError:
       logging.warn('Memory defragmentation not possible, use the tfrt runtime')
 
-  print("total step is ", total_steps)
   for step in range(start_step + 1, total_steps + 1):
     with jax.profiler.StepTraceAnnotation('train', step_num=step):
       train_batch = next(dataset.train_iter)
@@ -277,7 +272,7 @@ def train(
 
     eval_acc = 0
     ################### EVALUATION ################################
-    if ((step+1) % log_eval_steps == 1) or (step == total_steps):
+    if (step % log_eval_steps == 1) or (step == total_steps):
       with report_progress.timed('eval'):
         if do_memory_defrag:
           logging.info('Defragmenting memory')
@@ -337,17 +332,6 @@ def train(
             extra_eval_summary=additional_summary,
             writer=writer,
             key_separator='/')
-        eval_acc = eval_summary['accuracy']
-        # print(eval_acc)
-        # if eval_acc > best_eval_acc:
-        #     best_eval_acc = eval_acc
-        #     with report_progress.timed('checkpoint'):
-        #         # Sync model state across replicas.
-        #         train_state = train_utils.sync_model_state_across_replicas(train_state)
-        #         if lead_host:
-        #             train_state.replace(  # pytype: disable=attribute-error
-        #                 accum_train_time=chrono.accum_train_time)
-        #             train_utils.save_checkpoint(f"{workdir}_best", train_state)
         writer.flush()
         del eval_metrics
         if do_memory_defrag:
@@ -355,7 +339,7 @@ def train(
           client.defragment()
 
     ##################### CHECKPOINTING ###########################
-    if ((step % checkpoint_steps == 0 and step > 0) or ((step+1) % log_eval_steps == 1) or
+    if ((step % checkpoint_steps == 0 and step > 0) or
         (step == total_steps)) and config.checkpoint:
       with report_progress.timed('checkpoint'):
         # Sync model state across replicas.
