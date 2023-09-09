@@ -275,6 +275,7 @@ def train(
         logging.info('Defragmenting memory')
         client.defragment()
 
+    eval_acc = 0
     ################### EVALUATION ################################
     if ((step+1) % log_eval_steps == 1) or (step == total_steps):
       with report_progress.timed('eval'):
@@ -365,7 +366,9 @@ def train(
           train_utils.save_checkpoint(workdir, train_state)
           print(eval_acc)
           if eval_acc > best_eval_acc:
-              train_utils.save_checkpoint(f"{workdir}_best", train_state)
+            train_utils.save_checkpoint(f"{workdir}_best", train_state, max_to_keep=1)
+            best_eval_acc = eval_acc
+            print(f'best eval acc updated: {best_eval_acc}')
 
     ############# MULTICROP TESTING ############################
     if (config.dataset_configs.get('do_multicrop_test') and
