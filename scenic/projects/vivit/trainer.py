@@ -332,6 +332,7 @@ def train(
             extra_eval_summary=additional_summary,
             writer=writer,
             key_separator='/')
+        eval_acc = eval_summary['accuracy']
         writer.flush()
         del eval_metrics
         if do_memory_defrag:
