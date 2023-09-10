@@ -272,7 +272,7 @@ def train(
 
     eval_acc = 0
     ################### EVALUATION ################################
-    if (step % log_eval_steps == 1) or (step == total_steps):
+    if ((step+1) % log_eval_steps == 1) or (step == total_steps):
       with report_progress.timed('eval'):
         if do_memory_defrag:
           logging.info('Defragmenting memory')
@@ -340,7 +340,7 @@ def train(
           client.defragment()
 
     ##################### CHECKPOINTING ###########################
-    if ((step % checkpoint_steps == 0 and step > 0) or
+    if ((step % checkpoint_steps == 0 and step > 0) or ((step+1) % log_eval_steps == 1) or
         (step == total_steps)) and config.checkpoint:
       with report_progress.timed('checkpoint'):
         # Sync model state across replicas.
@@ -349,7 +349,6 @@ def train(
           train_state.replace(  # pytype: disable=attribute-error
               accum_train_time=chrono.accum_train_time)
           train_utils.save_checkpoint(workdir, train_state)
-          print(eval_acc)
           if eval_acc > best_eval_acc:
             train_utils.save_checkpoint(f"{workdir}_best", train_state, max_to_keep=1)
             best_eval_acc = eval_acc
