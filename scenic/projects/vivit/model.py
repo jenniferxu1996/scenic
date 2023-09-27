@@ -219,14 +219,37 @@ class EncoderBlock(nn.Module):
 
     # Attention block.
     x = nn.LayerNorm(dtype=self.dtype)(inputs)
-    x = nn.MultiHeadDotProductAttention(
+
+    attention_layer = nn.MultiHeadDotProductAttention(
         num_heads=self.num_heads,
         kernel_init=self.attention_kernel_initializer,
         broadcast_dropout=False,
         dropout_rate=self.attention_dropout_rate,
         attention_fn=self.attention_fn,
-        dtype=self.dtype)(
-            x, x, deterministic=deterministic)
+        dtype=self.dtype)
+
+    qkv_features = attention_layer.qkv_features or x.shape[-1]
+    head_dim = qkv_features // self.num_heads
+
+    dense = functools.partial(nn.attention.DenseGeneral,
+                              axis=-1,
+                              dtype=attention_layer.dtype,
+                              param_dtype=attention_layer.param_dtype,
+                              features=(attention_layer.num_heads, head_dim),
+                              kernel_init=attention_layer.kernel_init,
+                              bias_init=attention_layer.bias_init,
+                              use_bias=attention_layer.use_bias,
+                              precision=attention_layer.precision)
+    # project inputs_q to multi-headed q/k/v
+    # dimensions are then [batch..., length, n_heads, n_features_per_head]
+    query, key = (dense(name='query')(x), dense(name='key')(x))
+    query, key = nn.attention.promote_dtype(query, key, dtype=attention_layer.dtype)
+
+    # compute attention weights
+    attn_weights = nn.attention.dot_product_attention_weights(query, key)
+    print('attenss weight: ', attn_weights.shape)
+
+    x = attention_layer(x, x, deterministic=deterministic)
     x = nn.Dropout(rate=self.dropout_rate)(x, deterministic)
 
     drop_pattern = self.get_drop_pattern(x, deterministic)
